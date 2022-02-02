@@ -18,3 +18,17 @@ Ou você pode querer transformar variáveis para atender a suposições de model
 Existem muitas transformações diferentes da variável que podem nos dar a forma que observamos nos dados. Se tivermos um conhecimento de domínio para preferir um, é assim que devemos escolher. Mas se não sabemos e estamos principalmente preocupados com a previsão precisa, devemos escolher aquela que parece nos dar o menor erro de previsão.
 
 Devemos também validar o desempenho fora da amostra dos modelos, neste caso por validação cruzada. 
+
+
+## Desafios
+
+Utilizar o conjunto de dados houseprice. As variáveis são:
+
+-price: preço da casa em unidades de $ 1.000   
+
+-size: área de superfície
+
+*Escreva uma fórmula, para expressar o preço em função do quadrado do tamanho. 
+*Ajuste um modelo e para comparação, ajuste um modelo linear usando a fórmula price ~ size.
+*Procure fazer previsões a partir dos dados de treinamento dos dois modelos e reúna as previsões em uma única coluna 'pred'
+*Compare graficamente as previsões dos dois modelos com os dados. Qual se encaixa melhor?
