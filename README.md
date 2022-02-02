@@ -37,3 +37,5 @@ Ajuste um modelo e para comparação, ajuste um modelo linear usando a fórmula 
 Procure fazer previsões a partir dos dados de treinamento dos dois modelos e reúna as previsões em uma única coluna 'pred'.
 
 Compare graficamente as previsões dos dois modelos com os dados. Qual se encaixa melhor?
+
+![image](www/plot.png)
