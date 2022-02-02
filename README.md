@@ -8,7 +8,8 @@ Há muitas razões pelas quais você pode querer transformar as variáveis de en
 
 Você também pode querer transformar variáveis por motivos pragmáticos, para tornar a variável mais fácil de modelar. A transformação de log para valores monetários é um exemplo disso. Os valores monetários possuem distribuição log-normal, ao aplicarmos log os dados resultantes serão distribuídos normalmente. Um modelo que prevê um resultado logarítmico, geralmente, terá um RMS-erro relativo menor e um RMSE maior. Lembrando que: 
 
--Erro relativo = (pred/y - 1) 
+-Erro relativo = (pred/y - 1)   
+
 -RMSE = sqrt(mean(residuals^2))
 
 Ou você pode querer transformar variáveis para atender a suposições de modelagem, como linearidade.
