@@ -2,7 +2,7 @@
 
 Repositório com algumas anotações, reflexões, scripts dos estudos sobre Machine Learning para consulta posterior.
 
-## Por que transformar variáveis de entrada
+## Por que transformar variáveis de entrada?
 
 Há muitas razões pelas quais você pode querer transformar as variáveis de entrada antes da modelagem. A razão mais importante é que você tem conhecimento de domínio que lhe diz que uma variável transformada pode ser mais informativa. Por exemplo, a inteligência animal está relacionada à razão entre a massa cerebral e a massa corporal em dois terços, e não diretamente à massa cerebral ou corporal. 
 
