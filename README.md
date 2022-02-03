@@ -38,4 +38,29 @@ Procure fazer previsões a partir dos dados de treinamento dos dois modelos e re
 
 Compare graficamente as previsões dos dois modelos com os dados. Qual se encaixa melhor?
 
+Como esse conjunto de dados é pequeno, utilize a validação cruzada com a função kWayCrossValidation(). Dica: Você pode definir o 3º e 4º argumentos da função para NULL.
+
 ![image](www/plot.png)
+
+
+## Regressão logística para prever probabilidades
+
+Embora prever se um evento ocorrerá seja um problema de classificação, chamaremos a previsão da probabilidade numérica de que ele ocorra de regressão. No entanto, ao contrário da regressão padrão, as probabilidades só podem estar no intervalo 0-1.
+
+A regressão logística assume que as entradas são aditivas e lineares nas probabilidades logarítmicas do resultado, onde as probabilidades são a razão entre a probabilidade de um evento ocorrer e a probabilidade de não ocorrer. 
+
+log(p/1-p) = \beta_{0} + \beta_{1}*x1 + \beta_{2}*x2 + ...
+
+Você ajusta modelos de regressão logística em R com a função glm. A função recebe como entrada uma fórmula, um data.frame e um terceiro argumento chamado family, que descreve a distribuição de erros do modelo; apenas lembre-se que para regressão logística, use family = binomial.
+
+Generalized Linear Model (glm) também assume que existem dois resultados possíveis, a e b. O modelo retorna a probabilidade do evento b. Para tornar o modelo mais fácil de entender, recomendamos que você codifique os dois resultados como 0/1 ou FALSE e TRUE.
+
+
+
+## Interpretando Modelos de Regressão Logística
+
+Leia os coeficientes de uma regressão logística como você faz para um modelo linear. Se o coeficiente for positivo, então o evento se torna mais provável à medida que esse valor aumenta, se todo o resto for mantido constante.
+
+A função predict recebe como entradas o modelo e um dataframe. Para obter as probabilidades, inclua o argumento type = "response".
+
+
