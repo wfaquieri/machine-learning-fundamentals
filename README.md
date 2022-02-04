@@ -56,7 +56,9 @@ Embora prever se um evento ocorrerá seja um problema de classificação, chamar
 A regressão logística assume que as entradas são aditivas e lineares nas probabilidades logarítmicas do resultado, onde as probabilidades são a razão entre a probabilidade de um evento ocorrer e a probabilidade de não ocorrer. 
 
 \begin{equation}
+
 log(p/1-p) = \beta_{0} + \beta_{1}*x1 + \beta_{2}*x2 + ...
+
 \end{equation}
 
 Você ajusta modelos de regressão logística em R com a função glm. A função recebe como entrada uma fórmula, um data.frame e um terceiro argumento chamado family, que descreve a distribuição de erros do modelo; apenas lembre-se que para regressão logística, use family = binomial.
