@@ -1,3 +1,6 @@
+Just say hello!
+===============
+
 # machine-learning-fundamentals
 
 Repositório com algumas anotações, reflexões, scripts dos estudos sobre Machine Learning para consulta posterior.
