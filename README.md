@@ -227,4 +227,59 @@ Como os dados de aluguel de bicicletas são dados de séries temporais, você po
 
 ![](www/plot4.png)
 
+---
 
+## Modelo Aditivo Generalizado (GAM)
+
+Problema: modelar o peso médio das folhas de uma planta de soja em função do tempo (após o plantio). A planta de soja não cresce a uma taxa constante, mas tem um "surto de crescimento" que eventualmente diminui. Assim, o peso da folha não é bem descrito por um modelo linear.
+
+```r
+library(tidyverse)
+load("data/Soybean.RData")
+
+# From previous step
+library(mgcv)
+fmla.gam <- weight ~ s(Time)
+model.gam <- gam(fmla.gam, data = soybean_train, family = gaussian)
+
+# Call summary() on model.lin and look for R-squared
+summary(model.lin)
+
+# Call summary() on model.gam and look for R-squared
+summary(model.gam)
+
+# Call plot() on model.gam
+plot(model.gam)
+
+# soybean_test is in the workspace
+summary(soybean_test)
+
+# Get predictions from linear model
+soybean_test$pred.lin <- predict(model.lin, newdata = soybean_test)
+
+# Get predictions from gam model
+soybean_test$pred.gam <- as.numeric(predict(model.gam, newdata = soybean_test))
+
+# Gather the predictions into a "long" dataset
+soybean_long <- soybean_test %>%
+  gather(key = modeltype, value = pred, pred.lin, pred.gam)
+
+# Calculate the rmse
+soybean_long %>%
+  mutate(residual = weight - pred) %>%     # residuals
+  group_by(modeltype) %>%                  # group by modeltype
+  summarize(rmse = sqrt(mean(residual^2))) # calculate the RMSE
+
+# Compare the predictions against actual weights on the test data
+soybean_long %>%
+  ggplot(aes(x = Time)) +                          # the column for the x axis
+  geom_point(aes(y = weight)) +                    # the y-column for the scatterplot
+  geom_point(aes(y = pred, color = modeltype)) +   # the y-column for the point-and-line plot
+  geom_line(aes(y = pred, color = modeltype, linetype = modeltype)) + # the y-column for the point-and-line plot
+  scale_color_brewer(palette = "Dark2")
+  
+```
+
+## A intuição por trás dos métodos baseados em árvores
+
+Veremos algoritmos de modelagem que não assumem linearidade ou aditividade e que podem aprender tipos limitados de interações entre variáveis de entrada. Esses algoritmos são métodos *baseados em árvore* que funcionam combinando conjuntos de *árvores de decisão* que são aprendidas a partir dos dados de treinamento.
