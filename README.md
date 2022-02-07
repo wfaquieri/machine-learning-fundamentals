@@ -1,7 +1,7 @@
-machine-learning-fundamentals
-===============
+# machine-learning-fundamentals
 
-Repositório com algumas anotações, reflexões, scripts dos estudos sobre Machine Learning para consulta posterior.
+Repositório com algumas anotações e scripts dos estudos sobre Machine Learning para consulta posterior.
+
 
 ## Por que transformar variáveis de entrada?
 
@@ -41,7 +41,7 @@ Compare graficamente as previsões dos dois modelos com os dados. Qual se encaix
 
 Como esse conjunto de dados é pequeno, utilize a validação cruzada com a função kWayCrossValidation(). Dica: Você pode definir o 3º e 4º argumentos da função para NULL.
 
-![image](www/plot.png)
+![](www/plot.png)
 
 
 ## Regressão logística para prever probabilidades
@@ -57,9 +57,7 @@ Embora prever se um evento ocorrerá seja um problema de classificação, chamar
 A regressão logística assume que as entradas são aditivas e lineares nas probabilidades logarítmicas do resultado, onde as probabilidades são a razão entre a probabilidade de um evento ocorrer e a probabilidade de não ocorrer. 
 
 \begin{equation}
-
 log(p/1-p) = \beta_{0} + \beta_{1}*x1 + \beta_{2}*x2 + ...
-
 \end{equation}
 
 Você ajusta modelos de regressão logística em R com a função glm. A função recebe como entrada uma fórmula, um data.frame e um terceiro argumento chamado family, que descreve a distribuição de erros do modelo; apenas lembre-se que para regressão logística, use family = binomial.
@@ -99,5 +97,134 @@ Utilizando o sigr::wrapChiSqTest:
 ```r
 wrapChiSqTest(model) 
 ```
+
+## Curva de ganhos
+
+Você pode utilizar a função GainCurvePlot() para traçar a curva de ganho das previsões do modelo. Se a curva de ganho do modelo estiver próxima da curva de ganho ideal ("assistente"), então o modelo classificou bem: ou seja, o modelo previu que os eventos que realmente aconteceram teriam maior probabilidade de ocorrência. Exemplo: modelo que prevê a partir das caracteríscas de determinada espécie de ave, quais teriam mais chances de sobrevivência.
+
+
+![](www/plot2.png)
+
+Você vê na curva de ganho que o modelo segue a curva do assistente para cerca dos primeiros 30% dos dados, identificando cerca de 45% das aves sobreviventes com apenas alguns falsos positivos.
+
+---
+
+## Regressão de Poisson e Quasi-Poisson para prever contagens
+
+Prever contagens é um problema não linear, porque as contagens são restritas a serem não negativas e inteiros. 
+
+-Linear regression: values predict in [-\infty,+\infty]
+
+-Counts: integers in range [0,+\infty]
+
+A regressão de Poisson também é um modelo linear generalizado. Assume-se que as entradas são aditivas e lineares em relação ao logaritmo do resultado. Em R, você usará novamente a função glm, com family poisson ou quasipoisson.
+
+```r
+
+glm(formula, data, family = poisson)
+
+glm(formula, data, family = quasipoisson)
+
+```
+Para a regressão de Poisson, o resultado é um número inteiro que representa uma contagem ou uma taxa, como o número de multas de trânsito que um motorista recebe em um ano ou o número de visitas a um site por dia. 
+
+A regressão de Poisson assume que o processo que produz a contagem tem uma distribuição de Poisson, onde a média é igual à variância ou razoavelmente próximas.  \strong{Para muitos processos da vida real, a variância será bem diferente da média}. Nesse caso, você deve usar a regressão quasipoisson. A regressão de Poisson e quasipoisson funcionam melhor em conjuntos de dados maiores.
+
+
+
+
+##  Exemplo: previsão de aluguel de bicicletas
+
+Temos dados horários de um sistema de compartilhamento de bicicletas em Washington, DC, detalhando o número de bicicletas alugadas durante as primeiras 2 semanas de janeiro. Queremos um modelo para prever as contagens de aluguel de bicicleta por hora em função da hora do dia, do tipo de dia (dia útil, fim de semana ou feriado) e detalhes sobre o clima.
+
+```
+O conjunto de dados possui as seguintes colunas:
+
+-'cnt': o número de bicicletas alugadas naquela hora (o resultado)
+
+-'hr': a hora do dia (0-23, como fator)
+
+-'holiday': VERDADEIRO / FALSO
+
+-'workingday': TRUE se não for feriado nem fim de semana, senão FALSE
+
+-'weathersit': categórico, "claro a parcialmente nublado"/"precipitação leve"/"neblina"
+
+-'temp': temperatura normalizada em Celsius
+
+-'atemp': temperatura "sensível" normalizada em Celsius
+
+-'hum': umidade normalizada
+
+-'windspeed': velocidade do vento normalizada
+
+-'instant': o índice de tempo -- número de horas desde o início do conjunto de dados (não uma variável)
+
+-'mnthe' 'yr': índices de mês e ano (não variáveis)
+
+```
+
+-Usaremos os dados de julho para treinamento.
+
+-Como a variância dos aluguéis de bicicletas é muito maior que a média, usaremos a regressão quasipoisson. 
+
+```r
+bikesJuly %>% summarise(m = mean(cnt),v = var(cnt))
+
+# mean 273.6653 
+# var  45863.84
+
+```
+Criando uma fórmula para bicicletas alugadas em função das variáveis explicativas:
+
+```r
+outcome = bikesJuly$cnt %>% names()
+vars = (bikesJuly %>% names())[1:8]
+
+(fmla <- paste(outcome, "~", paste(vars, collapse = " + ")))
+
+# "cnt ~ hr + holiday + workingday + weathersit + temp + atemp + hum + windspeed"
+
+```
+Ajustando o modelo
+
+```r
+bike_model <- glm(formula=fmla,data=bikesJuly,family=quasipoisson)
+```
+
+Assim como na regressão logística, podemos usar pseudo-R-quadrado para verificar a qualidade do ajuste.
+
+```r
+(perf <- glance(bike_model))
+
+# Calculate pseudo-R-squared
+(pseudoR2 <- 1 - perf$deviance/perf$null.deviance)
+
+# 0.7842393
+```
+
+Vamos testar o modelo usando dados de agosto.
+
+```r
+# Make predictions on August data
+bikesAugust$pred  <- predict(bike_model,bikesAugust,type='response')
+
+# Calculate the RMSE
+bikesAugust %>% 
+  mutate(residual = pred-cnt) %>%
+  summarize(rmse  = sqrt(mean(residual^2)))
+  
+# rmse
+# 112.5815
+```
+Visualizando as previsões do modelo de bicicleta usando o gráfico de dispersão padrão "resultado versus previsão":
+
+![](www/plot3.png)
+
+
+Como os dados de aluguel de bicicletas são dados de séries temporais, você pode estar interessado em saber como o modelo funciona em função do tempo. A figura a seguir compara as previsões e os aluguéis reais, por hora, para os primeiros 14 dias de agosto.
+
+
+![](www/plot4.png)
 
 

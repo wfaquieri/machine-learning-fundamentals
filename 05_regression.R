@@ -628,9 +628,121 @@ houseprice_long %>%
 
 # -------------------------------------------------------------------------
 
-# Logistic regression to predict probabilities
+# modelo de regressão logística
+
+# glm(formula, data = data, family = binomial)
+
+#' The dataset sparrow is loaded into your workspace. 
+#' The outcome to be predicted is status ("Survived", "Perished"). 
+#' The variables we will consider are:
+#'   
+#' -total_length: length of the bird from tip of beak to tip of tail (mm)
+#' -weight: in grams
+#' -humerus : length of humerus ("upper arm bone" that connects the wing to 
+#' the body) (inches)
+
+library(broom)
+
+# sparrow is in the workspace
+summary(sparrow)
+
+# Create the survived column
+sparrow$survived <- ifelse(sparrow$status == "Survived",TRUE,FALSE)
+
+# Create the formula
+(fmla <- as.formula('survived ~ total_length + weight + humerus'))
+
+# Fit the logistic regression model
+sparrow_model <- glm(fmla,sparrow,family = binomial)
+
+# Call summary
+summary(sparrow_model)
+
+# Call glance
+(perf <- glance(sparrow_model))
+
+# Calculate pseudo-R-squared
+(pseudoR2 <- 1 - perf$deviance/perf$null.deviance)
+
+
+# sparrow is in the workspace
+summary(sparrow)
+
+# sparrow_model is in the workspace
+summary(sparrow_model)
+
+# Make predictions
+sparrow$pred <- predict(sparrow_model, type = "response")
+
+# Look at gain curve
+GainCurvePlot(sparrow, 'pred', 'survived', "sparrow survival model")
 
 
 
 
+## Ajustar um modelo para prever as contagens de aluguel de bicicletas
 
+# bikesJuly is in the workspace
+str(bikesJuly)
+
+outcome = (bikesJuly %>% names())[9]
+vars = (bikesJuly %>% names())[1:8]
+
+
+# Create the formula string for bikes rented as a function of the inputs
+(fmla <- paste(outcome, "~", paste(vars, collapse = " + ")))
+
+# Calculate the mean and variance of the outcome
+(mean_bikes <- mean(bikesJuly$cnt))
+(var_bikes <- var(bikesJuly$cnt))
+
+# Fit the model
+bike_model <- glm(formula=fmla,data=bikesJuly,family=quasipoisson)
+
+# Call glance
+(perf <- glance(bike_model))
+
+# Calculate pseudo-R-squared
+(pseudoR2 <- 1 - perf$deviance/perf$null.deviance)
+
+
+
+# bikesAugust is in the workspace
+str(bikesAugust)
+
+# bike_model is in the workspace
+summary(bike_model)
+
+# Make predictions on August data
+bikesAugust$pred  <- predict(bike_model,bikesAugust,type='response')
+
+# Calculate the RMSE
+bikesAugust %>% 
+  mutate(residual = pred-cnt) %>%
+  summarize(rmse  = sqrt(mean(residual^2)))
+
+# Plot predictions vs cnt (pred on x-axis)
+ggplot(bikesAugust, aes(x = pred, y = cnt)) +
+  geom_point() + 
+  geom_abline(color = "darkblue")
+
+bikesAugust %>% glimpse
+
+## converter 'instant' para unidades de dia, em vez de hora
+
+
+
+# Plot predictions and cnt by date/time
+bikesAugust %>% 
+  # set start to 0, convert unit to days
+  mutate(instant = (instant - min(instant))/24) %>%  
+  # gather cnt and pred into a value column
+  gather(key = valuetype, value = value, cnt, pred) %>%
+  filter(instant < 14) %>% # restrict to first 14 days
+  # plot value by instant
+  ggplot(aes(x = instant, y = value, color = valuetype, linetype = valuetype)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_continuous("Dias", breaks = 0:14, labels = 0:14) + 
+  scale_color_brewer(palette = "Dark2") + 
+  ggtitle("Aluguel de bicicletas previsto para agosto, modelo Quasipoisson")
