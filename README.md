@@ -279,7 +279,143 @@ soybean_long %>%
   scale_color_brewer(palette = "Dark2")
   
 ```
+# Tree-Based Methods
+
+Neste capítulo, abordaremos dois métodos de ensemble: random forests e gradient boosted trees.
 
 ## A intuição por trás dos métodos baseados em árvores
 
-Veremos algoritmos de modelagem que não assumem linearidade ou aditividade e que podem aprender tipos limitados de interações entre variáveis de entrada. Esses algoritmos são métodos *baseados em árvore* que funcionam combinando conjuntos de *árvores de decisão* que são aprendidas a partir dos dados de treinamento.
+As árvores de decisão aprendem regras da forma "se a e b e c, então y". As árvores podem expressar conceitos não lineares como intervalos e relações não monotônicas e, como AND é semelhante à multiplicação, as árvores podem expressar certos tipos de interações não aditivas.
+
+## Exemplo: prever a inteligência animal a partir do tempo de gestação e tamanho da ninhada
+
+Temos dados sobre o tamanho da ninhada e o tempo de gestação em dias de vários mamíferos. Também temos uma medida da inteligência de cada espécie, dimensionada para que a inteligência humana seja 1. Queremos prever a inteligência a partir do tamanho médio da ninhada e do tempo de gestação de uma espécie. Usaremos uma árvore de decisão.
+
+
+## Florestas aleatórias (random forests)
+
+Florestas aleatórias tentam resolver os problemas com o modelo de árvore de decisão construindo várias árvores a partir dos dados de treinamento. 
+
+-Usar dados ligeiramente diferentes para construir cada árvore adiciona diversidade aos modelos. 
+-A média dos resultados de várias árvores juntas reduz o risco de overfit. 
+-Várias árvores também fornecem previsões mais detalhadas do que uma única árvore.
+-Cada árvore individual é cultivada a partir de uma amostra aleatória dos dados de treinamento.
+-Em uma floresta aleatória, o conjunto de variáveis candidatas a serem consideradas é selecionado aleatoriamente.
+-Toda essa randomização confere diversidade ao conjunto de árvores.
+-Depois que todas as árvores são cultivadas, o modelo faz uma previsão em um dado passando-o por todas as árvores e calculando a média do resultado.
+
+## Exemplo: dados de aluguel de bicicletas
+
+Retornaremos a um exemplo anterior para prever as taxas de aluguel de bicicletas por hora a partir da hora do dia, do tipo de dia e das condições climáticas. 
+
+Treinaremos um modelo com dados de julho e avaliaremos o modelo com dados de agosto.
+
+Usaremos o pacote ranger para ajustar a floresta aleatória. A função ranger recebe uma fórmula, os dados de treinamento e o número de árvores. Se a variável de resultado for um valor numérico, o ranger fará automaticamente a regressão em vez da classificação. Por padrão, o ranger constrói 500 árvores. Recomendamos que você use pelo menos 200. 
+
+```r
+model = ranger::ranger(formula,data,num.trees = 500,respect.unordered.factors = 'order')
+```
+
+O argumento *respect.unordered.factors* informa ao ranger como tratar variáveis categóricas. Recomendamos definir esse valor como "order". Isso faz com que o ranger codifique de forma segura e significativa as variáveis categóricas como números. 
+
+
+```r
+load("data/Bikes.RData")
+
+# bikesJuly is in the workspace
+str(bikesJuly)
+
+# Random seed to reproduce results
+seed = 423563
+
+# The outcome column
+(outcome <- "cnt")
+
+# The input variables
+(vars <- c("hr", "holiday", "workingday", "weathersit", "temp", "atemp", "hum", "windspeed"))
+
+# Create the formula string for bikes rented as a function of the inputs
+(fmla <- paste(outcome, "~", paste(vars, collapse = " + ")))
+
+# Load the package ranger
+library(ranger)
+library(tidyverse)
+
+# Fit and print the random forest model
+(bike_model_rf <- ranger(fmla, # formula 
+                         bikesJuly, # data
+                            num.trees = 500, 
+                            respect.unordered.factors = 'order', 
+                            seed = seed))
+
+# Ranger result
+# 
+# Call:
+#   ranger(fmla, bikesJuly, num.trees = 500, respect.unordered.factors = "order",      seed = seed) 
+# 
+# Type:                             Regression 
+# Number of trees:                  500 
+# Sample size:                      744 
+# Number of independent variables:  8 
+# Mtry:                             2 
+# Target node size:                 5 
+# Variable importance mode:         none 
+# Splitrule:                        variance 
+# OOB prediction error (MSE):       8230.568 
+# R squared (OOB):                  0.8205434 
+
+# bikesAugust is in the workspace
+str(bikesAugust)
+
+# bike_model_rf is in the workspace
+bike_model_rf
+
+# Make predictions on the August data
+bikesAugust$pred <- predict(bike_model_rf, bikesAugust)$predictions
+
+# Calculate the RMSE of the predictions
+bikesAugust %>% 
+  mutate(residual = pred - cnt)  %>% # calculate the residual
+  summarize(rmse  = sqrt(mean(residual^2)))      # calculate rmse
+
+# rmse
+# 97.18347
+
+first_two_weeks <- bikesAugust %>% 
+  # Set start to 0, convert unit to days
+  mutate(instant = (instant - min(instant)) / 24) %>% 
+  # Gather cnt and pred into a column named value with key valuetype
+  gather(key = valuetype, value = value, cnt, pred) %>%
+  # Filter for rows in the first two
+  filter(instant < 14) 
+
+# Plot predictions and cnt by date/time 
+first_two_weeks %>% ggplot(aes(x = instant, y = value, color = valuetype, linetype = valuetype)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_continuous("Day", breaks = 0:14, labels = 0:14) + 
+  scale_color_brewer(palette = "Dark2") + 
+  ggtitle("Aluguel de bicicletas previsto para agosto, modelo Random Forest")
+  
+```
+![](www/plot5.png)
+
+Esse modelo de floresta aleatória supera o modelo de poisson (visto anteriormente) nos mesmos dados, em termos de RMSE; Isto é, é capaz de descobrir relações não lineares ou não aditivas mais complexas nos dados. 
+
+Além disso, O modelo de floresta aleatória capturou as variações diárias na demanda de pico 
+melhor do que o modelo quasipoisson, mas ainda subestima a demanda de pico e também
+superestima a demanda mínima. Portanto, ainda há espaço para melhorias.
+
+![](www/plot6.png)
+
+
+
+## Variáveis categóricas: One-Hot-Encoding
+
+A maioria das funções de modelagem em R faz um ótimo trabalho de gerenciamento de variáveis categóricas, então normalmente você não precisa se preocupar com isso. No entanto, nem todas as linguagens de programação fazem isso. 
+
+O xgboost, um pacote que vem originalmente do Python, não aceita diretamente variáveis categóricas; Estas devem ser convertidas em alguma representação numérica. Em Python, essa conversão é chamada de one-Hot-Encoding.
+
+Usaremos o pacote vtreat para codificar variáveis categóricas de uma só vez. Como efeito colateral, o vtreat também limpa os valores ausentes em dados categóricos e numéricos. A ideia básica é projetar um plano de tratamento a partir dos dados de treinamento usando a função designTreatmentsZ. Este plano de tratamento registra as etapas necessárias para codificar com segurança não apenas os dados de treinamento, mas também os dados futuros. A função *prepare* converte os dados de treinamento e futuros em uma forma compatível com xgboost: todas as variáveis numéricas, sem valores ausentes.
+
+

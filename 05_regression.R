@@ -801,3 +801,99 @@ soybean_long %>%
   geom_point(aes(y = pred, color = modeltype)) +   # the y-column for the point-and-line plot
   geom_line(aes(y = pred, color = modeltype, linetype = modeltype)) + # the y-column for the point-and-line plot
   scale_color_brewer(palette = "Dark2")
+
+
+
+
+# Random Forests ----------------------------------------------------------
+
+load("data/Bikes.RData")
+
+# bikesJuly is in the workspace
+str(bikesJuly)
+
+# Random seed to reproduce results
+seed = 423563
+
+# The outcome column
+(outcome <- "cnt")
+
+# The input variables
+(vars <- c("hr", "holiday", "workingday", "weathersit", "temp", "atemp", "hum", "windspeed"))
+
+# Create the formula string for bikes rented as a function of the inputs
+(fmla <- paste(outcome, "~", paste(vars, collapse = " + ")))
+
+# Load the package ranger
+library(ranger)
+library(tidyverse)
+
+# Fit and print the random forest model
+(bike_model_rf <- ranger(fmla, # formula 
+                         bikesJuly, # data
+                            num.trees = 500, 
+                            respect.unordered.factors = 'order', 
+                            seed = seed))
+
+# Ranger result
+# 
+# Call:
+#   ranger(fmla, bikesJuly, num.trees = 500, respect.unordered.factors = "order",      seed = seed) 
+# 
+# Type:                             Regression 
+# Number of trees:                  500 
+# Sample size:                      744 
+# Number of independent variables:  8 
+# Mtry:                             2 
+# Target node size:                 5 
+# Variable importance mode:         none 
+# Splitrule:                        variance 
+# OOB prediction error (MSE):       8230.568 
+# R squared (OOB):                  0.8205434 
+
+# bikesAugust is in the workspace
+str(bikesAugust)
+
+# bike_model_rf is in the workspace
+bike_model_rf
+
+# Make predictions on the August data
+bikesAugust$pred <- predict(bike_model_rf, bikesAugust)$predictions
+
+# Calculate the RMSE of the predictions
+bikesAugust %>% 
+  mutate(residual = pred - cnt)  %>% # calculate the residual
+  summarize(rmse  = sqrt(mean(residual^2)))      # calculate rmse
+
+# rmse
+# 97.18347
+
+# Plot actual outcome vs predictions (predictions on x-axis)
+ggplot(bikesAugust, aes(x = pred, y = cnt)) + 
+  geom_point() + 
+  geom_abline()
+
+# Esse modelo de floresta aleatória supera o modelo de contagem de poisson nos mesmos dados; 
+# Isto é, é capaz de descobrir relações não lineares ou não aditivas mais complexas nos dados.
+
+
+
+first_two_weeks <- bikesAugust %>% 
+  # Set start to 0, convert unit to days
+  mutate(instant = (instant - min(instant)) / 24) %>% 
+  # Gather cnt and pred into a column named value with key valuetype
+  gather(key = valuetype, value = value, cnt, pred) %>%
+  # Filter for rows in the first two
+  filter(instant < 14) 
+
+# Plot predictions and cnt by date/time 
+first_two_weeks %>% ggplot(aes(x = instant, y = value, color = valuetype, linetype = valuetype)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_continuous("Day", breaks = 0:14, labels = 0:14) + 
+  scale_color_brewer(palette = "Dark2") + 
+  ggtitle("Aluguel de bicicletas previsto para agosto, modelo Random Forest")
+
+#' O modelo de floresta aleatória capturou as variações diárias na demanda de pico 
+#' melhor do que o modelo quasipoisson, mas ainda subestima a demanda de pico e também 
+#' superestima a demanda mínima. Portanto, ainda há espaço para melhorias.
