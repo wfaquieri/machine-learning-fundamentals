@@ -414,7 +414,7 @@ superestima a demanda mínima. Portanto, ainda há espaço para melhorias.
 
 A maioria das funções de modelagem em R faz um ótimo trabalho de gerenciamento de variáveis categóricas, então normalmente você não precisa se preocupar com isso. No entanto, nem todas as linguagens de programação fazem isso. 
 
-O xgboost, um pacote que vem originalmente do Python, não aceita diretamente variáveis categóricas; Estas devem ser convertidas em alguma representação numérica. Em Python, essa conversão é chamada de one-Hot-Encoding.
+O xgboost, um pacote que vem originalmente do Python, não aceita diretamente variáveis categóricas; Estas devem ser convertidas em alguma representação numérica. Em Python, essa conversão é chamada de *one-Hot-Encoding*.
 
 Usaremos o pacote vtreat para codificar variáveis categóricas de uma só vez. Como efeito colateral, o vtreat também limpa os valores ausentes em dados categóricos e numéricos. A ideia básica é projetar um plano de tratamento a partir dos dados de treinamento usando a função designTreatmentsZ. Este plano de tratamento registra as etapas necessárias para codificar com segurança não apenas os dados de treinamento, mas também os dados futuros. A função *prepare* converte os dados de treinamento e futuros em uma forma compatível com xgboost: todas as variáveis numéricas, sem valores ausentes.
 
