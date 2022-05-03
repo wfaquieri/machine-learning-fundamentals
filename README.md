@@ -2,6 +2,7 @@
 
 Repositório com algumas anotações e scripts dos estudos sobre Machine Learning para consulta posterior.
 
+![](www/image1.png)
 
 ## Por que transformar variáveis de entrada?
 
